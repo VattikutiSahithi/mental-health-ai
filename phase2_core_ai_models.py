@@ -1,41 +1,67 @@
-# phase2_core_ai_models.py
 import pandas as pd
 import numpy as np
 import joblib
 import os
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 
 # ==============================
-# Depression Risk Prediction Model
+# Depression Risk Prediction Model (10 input features)
 # ==============================
 def train_depression_model(csv_path=r"D:\Capstone\mental_health_ai\data\student_depression_cleaned.csv"):
     df = pd.read_csv(csv_path)
 
-    # Ensure target is categorical (0/1)
-    df['Depression'] = df['Depression'].astype(int)
+    # Define relevant columns
+    feature_cols = [
+        'Gender',
+        'Age',
+        'Academic Pressure',
+        'Study Satisfaction',
+        'Sleep Duration',
+        'Dietary Habits',
+        'Have you ever had suicidal thoughts ?',
+        'Work/Study Hours',
+        'Financial Stress',
+        'Family History of Mental Illness'
+    ]
+    target_col = 'Depression'
 
-    X = df.drop(columns=['Depression'])
-    y = df['Depression']
+    # Keep required columns only
+    df = df[feature_cols + [target_col]].copy()
 
-    # Encode categorical features
-    X = pd.get_dummies(X)
+    # Clean and encode categorical values
+    for col in feature_cols:
+        df[col] = df[col].astype(str).str.strip().str.replace("'", "", regex=False)
+        df[col] = df[col].astype('category').cat.codes
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X = df[feature_cols]
+    y = df[target_col].astype(int)
 
+    # Scale features
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+    # Train model
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
 
-    preds = model.predict(X_test)
-    report = classification_report(y_test, preds, output_dict=True)   # ✅ FIXED
-    acc = accuracy_score(y_test, preds)
+    # Evaluate
+    report = classification_report(y_test, y_pred, output_dict=True)
+    acc = accuracy_score(y_test, y_pred)
 
+    # Save model + scaler + features
     os.makedirs("models", exist_ok=True)
     joblib.dump(model, "models/behavioral_model.pkl")
+    joblib.dump(scaler, "models/scaler.pkl")
+    joblib.dump(feature_cols, "models/behavioral_features.pkl")
 
     return report, acc
 
@@ -45,30 +71,26 @@ def train_depression_model(csv_path=r"D:\Capstone\mental_health_ai\data\student_
 def train_sentiment_model(csv_path=r"D:\Capstone\mental_health_ai\Preprocessed_Data\sentiment_statements_ready.csv"):
     df = pd.read_csv(csv_path)
 
-    # Use cleaned statements
     X = df["clean_statement"].astype(str)
-    y = df["label"]
+    y = df["label"].astype(str)
 
-    # TF-IDF Vectorizer
-    vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1,2))
+    vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))
     X_tfidf = vectorizer.fit_transform(X)
 
-    # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(X_tfidf, y, test_size=0.2, random_state=42)
 
-    # Train classifier
     model = LogisticRegression(max_iter=200)
     model.fit(X_train, y_train)
 
-    # Evaluate
     y_pred = model.predict(X_test)
     report = classification_report(y_test, y_pred, output_dict=True)
+    acc = accuracy_score(y_test, y_pred)
 
-    # Save model + vectorizer
+    os.makedirs("models", exist_ok=True)
     joblib.dump(model, "models/sentiment_model.pkl")
     joblib.dump(vectorizer, "models/sentiment_vectorizer.pkl")
 
-    return report, accuracy_score(y_test, y_pred)
+    return report, acc
 
 # ==============================
 # Main pipeline
@@ -80,7 +102,7 @@ if __name__ == "__main__":
 
     # Train Depression Model
     dep_report, dep_acc = train_depression_model()
-    dep_df = pd.DataFrame(dep_report).transpose()   # ✅ FIXED
+    dep_df = pd.DataFrame(dep_report).transpose()
     results_summary.append("=== Depression Risk Model ===\n")
     results_summary.append(f"Accuracy: {dep_acc:.4f}\n")
     results_summary.append(dep_df.to_string())
@@ -88,14 +110,13 @@ if __name__ == "__main__":
 
     # Train Sentiment Model
     sent_report, sent_acc = train_sentiment_model()
-    sent_df = pd.DataFrame(sent_report).transpose()   # ✅ FIXED
+    sent_df = pd.DataFrame(sent_report).transpose()
     results_summary.append("=== Sentiment / Statement Model ===\n")
     results_summary.append(f"Accuracy: {sent_acc:.4f}\n")
     results_summary.append(sent_df.to_string())
     results_summary.append("\n")
 
-    # Save evaluation results
     with open("evaluation_results.txt", "w", encoding="utf-8") as f:
         f.writelines(results_summary)
 
-    print("✅ Training completed. Models and results saved.")
+    print("✅ Training completed successfully! Models and results saved in the 'models' folder.")
