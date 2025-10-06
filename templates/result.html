@@ -1,15 +1,595 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Prediction Result</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Results - Mental Health AI</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .results-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .results-header h2 {
+            color: #2d3748;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .results-header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .result-card {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .result-card.risk-yes::before {
+            background: linear-gradient(90deg, #e53e3e 0%, #fc8181 100%);
+        }
+
+        .result-card.risk-no::before {
+            background: linear-gradient(90deg, #38a169 0%, #68d391 100%);
+        }
+
+        .result-card.sentiment-positive::before {
+            background: linear-gradient(90deg, #38a169 0%, #68d391 100%);
+        }
+
+        .result-card.sentiment-negative::before {
+            background: linear-gradient(90deg, #e53e3e 0%, #fc8181 100%);
+        }
+
+        .result-card.sentiment-neutral::before {
+            background: linear-gradient(90deg, #d69e2e 0%, #f6e05e 100%);
+        }
+
+        .result-card.crisis-high::before {
+            background: linear-gradient(90deg, #e53e3e 0%, #fc8181 100%);
+        }
+
+        .result-card.crisis-medium::before {
+            background: linear-gradient(90deg, #d69e2e 0%, #f6e05e 100%);
+        }
+
+        .result-card.crisis-low::before {
+            background: linear-gradient(90deg, #38a169 0%, #68d391 100%);
+        }
+
+        .result-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .result-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .result-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .result-value.risk-yes {
+            color: #e53e3e;
+        }
+
+        .result-value.risk-no {
+            color: #38a169;
+        }
+
+        .result-value.sentiment-positive {
+            color: #38a169;
+        }
+
+        .result-value.sentiment-negative {
+            color: #e53e3e;
+        }
+
+        .result-value.sentiment-neutral {
+            color: #d69e2e;
+        }
+
+        .result-value.crisis-high {
+            color: #e53e3e;
+        }
+
+        .result-value.crisis-medium {
+            color: #d69e2e;
+        }
+
+        .result-value.crisis-low {
+            color: #38a169;
+        }
+
+        .result-description {
+            color: #718096;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .recommendations {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            border-left: 4px solid #667eea;
+        }
+
+        .recommendations h3 {
+            color: #2d3748;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .recommendations h3 i {
+            margin-right: 10px;
+            color: #667eea;
+        }
+
+        .recommendation-list {
+            list-style: none;
+        }
+
+        .recommendation-list li {
+            padding: 15px 0;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .recommendation-list li:last-child {
+            border-bottom: none;
+        }
+
+        .recommendation-list li i {
+            color: #667eea;
+            margin-right: 15px;
+            margin-top: 3px;
+            font-size: 1.1rem;
+        }
+
+        .recommendation-text {
+            flex: 1;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-emergency {
+            background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
+            color: white;
+            box-shadow: 0 10px 20px rgba(229, 62, 62, 0.3);
+        }
+
+        .btn-emergency:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(229, 62, 62, 0.4);
+        }
+
+        .record-info {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            margin-top: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .record-info i {
+            margin-right: 8px;
+        }
+
+        .alert {
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 4px solid;
+        }
+
+        .alert-high {
+            background: #fed7d7;
+            border-left-color: #e53e3e;
+            color: #742a2a;
+        }
+
+        .alert-medium {
+            background: #fef5e7;
+            border-left-color: #d69e2e;
+            color: #744210;
+        }
+
+        .alert-low {
+            background: #c6f6d5;
+            border-left-color: #38a169;
+            color: #22543d;
+        }
+
+        .alert i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .results-container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
 </head>
 <body>
-    <h2>Prediction Results</h2>
-    <p><b>Behavioral Risk:</b> {{ behavioral_risk }}</p>
-    <p><b>Sentiment:</b> {{ sentiment }}</p>
-    <p><b>Crisis Level:</b> {{ crisis_level }}</p>
-    <p><i>Record saved with ID: {{ record_id }}</i></p>
-    <br>
-    <a href="/">Go Back</a>
+    <div class="container">
+        <div class="header fade-in">
+            <h1><i class="fas fa-chart-line"></i> Assessment Complete</h1>
+            <p>Your mental health analysis results are ready</p>
+        </div>
+
+        <div class="results-container fade-in">
+            <div class="results-header">
+                <h2>Analysis Results</h2>
+                <p>Based on your responses and AI analysis</p>
+            </div>
+
+            {% if crisis_level == "High" %}
+            <div class="alert alert-high">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>High Priority Alert:</strong> Your assessment indicates a high crisis level. Please consider seeking immediate professional help or contacting a mental health crisis line.
+            </div>
+            {% elif crisis_level == "Medium" %}
+            <div class="alert alert-medium">
+                <i class="fas fa-exclamation-circle"></i>
+                <strong>Medium Priority:</strong> Your assessment shows some areas of concern. We recommend consulting with a mental health professional for further evaluation.
+            </div>
+            {% else %}
+            <div class="alert alert-low">
+                <i class="fas fa-check-circle"></i>
+                <strong>Low Risk:</strong> Your assessment shows generally positive mental health indicators. Continue maintaining healthy habits and consider regular check-ins.
+            </div>
+            {% endif %}
+
+            <div class="results-grid">
+                <div class="result-card risk-{{ 'yes' if behavioral_risk == 'Yes' else 'no' }}">
+                    <div class="result-icon">
+                        {% if behavioral_risk == 'Yes' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% else %}
+                            <i class="fas fa-shield-alt"></i>
+                        {% endif %}
+                    </div>
+                    <div class="result-title">Behavioral Risk Assessment</div>
+                    <div class="result-value risk-{{ 'yes' if behavioral_risk == 'Yes' else 'no' }}">
+                        {{ behavioral_risk }}
+                    </div>
+                    <div class="result-description">
+                        {% if behavioral_risk == 'Yes' %}
+                            Analysis indicates potential behavioral risk factors that require attention.
+                        {% else %}
+                            No significant behavioral risk factors detected in your assessment.
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="result-card sentiment-{{ sentiment.lower().replace(' ', '-') }}">
+                    <div class="result-icon">
+                        {% if 'Positive' in sentiment %}
+                            <i class="fas fa-smile"></i>
+                        {% elif 'Negative' in sentiment %}
+                            <i class="fas fa-frown"></i>
+                        {% else %}
+                            <i class="fas fa-meh"></i>
+                        {% endif %}
+                    </div>
+                    <div class="result-title">Emotional Sentiment</div>
+                    <div class="result-value sentiment-{{ sentiment.lower().replace(' ', '-') }}">
+                        {{ sentiment }}
+                    </div>
+                    <div class="result-description">
+                        Analysis of your personal statement reveals {{ sentiment.lower() }} emotional patterns.
+                    </div>
+                </div>
+
+                <div class="result-card crisis-{{ crisis_level.lower() }}">
+                    <div class="result-icon">
+                        {% if crisis_level == 'High' %}
+                            <i class="fas fa-fire pulse"></i>
+                        {% elif crisis_level == 'Medium' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% else %}
+                            <i class="fas fa-check-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="result-title">Crisis Level</div>
+                    <div class="result-value crisis-{{ crisis_level.lower() }}">
+                        {{ crisis_level }}
+                    </div>
+                    <div class="result-description">
+                        Overall assessment indicates {{ crisis_level.lower() }} priority level for mental health support.
+                    </div>
+                </div>
+            </div>
+
+            <div class="recommendations">
+                <h3><i class="fas fa-lightbulb"></i> Recommendations</h3>
+                <ul class="recommendation-list">
+                    {% if crisis_level == "High" %}
+                    <li>
+                        <i class="fas fa-phone"></i>
+                        <div class="recommendation-text">
+                            <strong>Immediate Action:</strong> Contact a mental health crisis line or emergency services if you're having thoughts of self-harm.
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-user-md"></i>
+                        <div class="recommendation-text">
+                            <strong>Professional Help:</strong> Schedule an appointment with a mental health professional as soon as possible.
+                        </div>
+                    </li>
+                    {% elif crisis_level == "Medium" %}
+                    <li>
+                        <i class="fas fa-calendar-check"></i>
+                        <div class="recommendation-text">
+                            <strong>Professional Consultation:</strong> Consider scheduling a consultation with a mental health professional within the next few weeks.
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-heart"></i>
+                        <div class="recommendation-text">
+                            <strong>Self-Care:</strong> Focus on stress management techniques and maintain regular sleep and exercise routines.
+                        </div>
+                    </li>
+                    {% else %}
+                    <li>
+                        <i class="fas fa-running"></i>
+                        <div class="recommendation-text">
+                            <strong>Maintain Healthy Habits:</strong> Continue your current positive lifestyle choices and stress management practices.
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-calendar-alt"></i>
+                        <div class="recommendation-text">
+                            <strong>Regular Check-ins:</strong> Consider periodic mental health assessments to monitor your well-being.
+                        </div>
+                    </li>
+                    {% endif %}
+                    <li>
+                        <i class="fas fa-users"></i>
+                        <div class="recommendation-text">
+                            <strong>Support Network:</strong> Stay connected with friends, family, or support groups for emotional support.
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-book"></i>
+                        <div class="recommendation-text">
+                            <strong>Education:</strong> Learn more about mental health and wellness strategies through reputable sources.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="action-buttons">
+                <a href="/" class="btn btn-primary">
+                    <i class="fas fa-redo"></i>
+                    New Assessment
+                </a>
+                {% if crisis_level == "High" %}
+                <a href="tel:988" class="btn btn-emergency">
+                    <i class="fas fa-phone"></i>
+                    Crisis Hotline: 988
+                </a>
+                {% endif %}
+                <button onclick="window.print()" class="btn btn-secondary">
+                    <i class="fas fa-print"></i>
+                    Print Results
+                </button>
+            </div>
+        </div>
+
+        <div class="record-info fade-in">
+            <i class="fas fa-database"></i>
+            <strong>Record ID:</strong> {{ record_id }} |
+            <i class="fas fa-shield-alt"></i>
+            <strong>Confidential:</strong> Your data is securely stored and encrypted
+        </div>
+    </div>
+
+    <script>
+        // Add animation delays for staggered effect
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.result-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.2}s`;
+            });
+        });
+
+        // Smooth scroll to results
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    </script>
 </body>
 </html>
