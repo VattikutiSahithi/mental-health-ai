@@ -74,12 +74,18 @@ def predict():
     family_history = int(data["family_history"])
     statement = data["statement"]
 
-    # Predict behavioral risk
-    features = np.array([[gender, age, academic_pressure, study_satisfaction,
-                          sleep_duration, dietary_habits, suicidal_thoughts,
-                          work_study_hours, financial_stress, family_history]])
+    # -----------------------------
+    # FIXED SECTION: Apply same scaling used during training
+    # -----------------------------
+    raw_features = np.array([[gender, age, academic_pressure, study_satisfaction,
+                              sleep_duration, dietary_habits, suicidal_thoughts,
+                              work_study_hours, financial_stress, family_history]])
 
-    behavioral_pred = behavioral_model.predict(features)[0]
+    # Apply StandardScaler transformation
+    scaled_features = scaler.transform(raw_features)
+
+    # Predict behavioral risk using scaled inputs
+    behavioral_pred = behavioral_model.predict(scaled_features)[0]
     behavioral_pred = int(behavioral_pred) if isinstance(behavioral_pred, np.generic) else behavioral_pred
     behavioral_risk = "Yes" if behavioral_pred == 1 else "No"
 
@@ -121,7 +127,7 @@ def predict():
         depression_label=int(behavioral_pred),
         statement_text=str(statement),
         behavioral_risk=str(behavioral_risk),
-        sentiment=str(sentiment_text),  # ✅ Save text instead of number
+        sentiment=str(sentiment_text),
         crisis_level=str(crisis_level)
     )
 
@@ -130,14 +136,14 @@ def predict():
     db.refresh(record)
     db.close()
 
-    # Render results
     return render_template(
         "result.html",
         behavioral_risk=behavioral_risk,
-        sentiment=sentiment_text,  # ✅ Show sentiment text
+        sentiment=sentiment_text,
         crisis_level=crisis_level,
         record_id=record.id
     )
+
 
 
 if __name__ == "__main__":
