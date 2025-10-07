@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics & Reports - Mental Health AI Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #2d3748;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 30px 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .nav-menu {
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 15px 25px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255,255,255,0.1);
+            border-left-color: #4facfe;
+        }
+
+        .nav-item i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 30px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        /* Analytics Grid */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .analytics-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .analytics-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .card-header i {
+            font-size: 1.5rem;
+            margin-right: 15px;
+            color: #667eea;
+        }
+
+        .card-header h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .chart-container.large {
+            height: 400px;
+        }
+
+        /* Risk Analysis Cards */
+        .risk-analysis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .risk-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .risk-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .risk-card.high-risk {
+            border-left: 4px solid #e53e3e;
+        }
+
+        .risk-card.medium-risk {
+            border-left: 4px solid #d69e2e;
+        }
+
+        .risk-card.low-risk {
+            border-left: 4px solid #38a169;
+        }
+
+        .risk-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .risk-card.high-risk .risk-icon {
+            color: #e53e3e;
+        }
+
+        .risk-card.medium-risk .risk-icon {
+            color: #d69e2e;
+        }
+
+        .risk-card.low-risk .risk-icon {
+            color: #38a169;
+        }
+
+        .risk-label {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .risk-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .risk-percentage {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        /* Insights Section */
+        .insights-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .insight-item:last-child {
+            border-bottom: none;
+        }
+
+        .insight-icon {
+            color: #667eea;
+            margin-right: 15px;
+            margin-top: 3px;
+            font-size: 1.2rem;
+        }
+
+        .insight-content {
+            flex: 1;
+        }
+
+        .insight-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .insight-description {
+            color: #4a5568;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+
+        /* Export Section */
+        .export-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .export-btn.secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .risk-analysis {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .page-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .risk-analysis {
+                grid-template-columns: 1fr;
+            }
+
+            .export-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .export-btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: #718096;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1><i class="fas fa-user-md"></i> Admin Panel</h1>
+                <p>Mental Health AI Platform</p>
+            </div>
+            <div class="nav-menu">
+                <a href="/admin" class="nav-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+                <a href="/admin/patients" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    Patient Management
+                </a>
+                <a href="/admin/analytics" class="nav-item active">
+                    <i class="fas fa-chart-line"></i>
+                    Analytics & Reports
+                </a>
+                <a href="/" class="nav-item">
+                    <i class="fas fa-plus-circle"></i>
+                    New Assessment
+                </a>
+                <a href="/admin/api/stats" class="nav-item">
+                    <i class="fas fa-download"></i>
+                    Export Data
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i> Menu
+            </button>
+
+            <div class="page-header">
+                <h2><i class="fas fa-chart-line"></i> Analytics & Reports</h2>
+                <p>Comprehensive analysis of patient data and mental health trends</p>
+            </div>
+
+            <!-- Risk Analysis Overview -->
+            <div class="risk-analysis">
+                <div class="risk-card high-risk">
+                    <div class="risk-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="risk-label">Suicidal Thoughts</div>
+                    <div class="risk-value">{{ risk_analysis.suicidal_thoughts }}</div>
+                    <div class="risk-percentage">patients reported</div>
+                </div>
+                <div class="risk-card medium-risk">
+                    <div class="risk-icon">
+                        <i class="fas fa-family"></i>
+                    </div>
+                    <div class="risk-label">Family History</div>
+                    <div class="risk-value">{{ risk_analysis.family_history }}</div>
+                    <div class="risk-percentage">patients affected</div>
+                </div>
+                <div class="risk-card medium-risk">
+                    <div class="risk-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div class="risk-label">High Academic Pressure</div>
+                    <div class="risk-value">{{ risk_analysis.high_academic_pressure }}</div>
+                    <div class="risk-percentage">patients (8+/10)</div>
+                </div>
+                <div class="risk-card medium-risk">
+                    <div class="risk-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="risk-label">High Financial Stress</div>
+                    <div class="risk-value">{{ risk_analysis.high_financial_stress }}</div>
+                    <div class="risk-percentage">patients (8+/10)</div>
+                </div>
+                <div class="risk-card low-risk">
+                    <div class="risk-icon">
+                        <i class="fas fa-bed"></i>
+                    </div>
+                    <div class="risk-label">Poor Sleep</div>
+                    <div class="risk-value">{{ risk_analysis.poor_sleep }}</div>
+                    <div class="risk-percentage">patients (<6 hours)</div>
+                </div>
+            </div>
+
+            <!-- Analytics Charts -->
+            <div class="analytics-grid">
+                <!-- Age Distribution -->
+                <div class="analytics-card">
+                    <div class="card-header">
+                        <i class="fas fa-users"></i>
+                        <h3>Age Distribution</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="ageChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Sentiment Trends -->
+                <div class="analytics-card">
+                    <div class="card-header">
+                        <i class="fas fa-heart"></i>
+                        <h3>Sentiment Analysis</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="sentimentChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Crisis Level Trends -->
+                <div class="analytics-card full-width">
+                    <div class="card-header">
+                        <i class="fas fa-chart-area"></i>
+                        <h3>Crisis Level Trends (Last 30 Days)</h3>
+                    </div>
+                    <div class="chart-container large">
+                        <canvas id="crisisTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Insights -->
+            <div class="insights-section">
+                <div class="card-header">
+                    <i class="fas fa-lightbulb"></i>
+                    <h3>Key Insights & Recommendations</h3>
+                </div>
+                <div class="insight-item">
+                    <i class="fas fa-exclamation-triangle insight-icon"></i>
+                    <div class="insight-content">
+                        <div class="insight-title">High-Risk Patient Monitoring</div>
+                        <div class="insight-description">
+                            {{ risk_analysis.suicidal_thoughts }} patients have reported suicidal thoughts.
+                            Implement immediate follow-up protocols and crisis intervention strategies for these cases.
+                        </div>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <i class="fas fa-graduation-cap insight-icon"></i>
+                    <div class="insight-content">
+                        <div class="insight-title">Academic Stress Management</div>
+                        <div class="insight-description">
+                            {{ risk_analysis.high_academic_pressure }} patients report high academic pressure (8+/10).
+                            Consider implementing stress management programs and academic support services.
+                        </div>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <i class="fas fa-dollar-sign insight-icon"></i>
+                    <div class="insight-content">
+                        <div class="insight-title">Financial Stress Support</div>
+                        <div class="insight-description">
+                            {{ risk_analysis.high_financial_stress }} patients experience high financial stress.
+                            Provide information about financial counseling and support resources.
+                        </div>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <i class="fas fa-bed insight-icon"></i>
+                    <div class="insight-content">
+                        <div class="insight-title">Sleep Health Initiative</div>
+                        <div class="insight-description">
+                            {{ risk_analysis.poor_sleep }} patients report insufficient sleep (<6 hours).
+                            Develop sleep hygiene education programs and consider sleep study referrals.
+                        </div>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <i class="fas fa-chart-line insight-icon"></i>
+                    <div class="insight-content">
+                        <div class="insight-title">Trend Analysis</div>
+                        <div class="insight-description">
+                            Monitor daily crisis level trends to identify patterns and peak periods.
+                            This data can help optimize staffing and resource allocation.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div class="export-section">
+                <div class="card-header">
+                    <i class="fas fa-download"></i>
+                    <h3>Export & Reports</h3>
+                </div>
+                <p style="color: #718096; margin-bottom: 25px;">
+                    Download comprehensive reports and data exports for further analysis
+                </p>
+                <div class="export-buttons">
+                    <a href="/admin/api/stats" class="export-btn primary">
+                        <i class="fas fa-file-csv"></i>
+                        Export CSV Data
+                    </a>
+                    <button onclick="generatePDFReport()" class="export-btn secondary">
+                        <i class="fas fa-file-pdf"></i>
+                        Generate PDF Report
+                    </button>
+                    <button onclick="printAnalytics()" class="export-btn secondary">
+                        <i class="fas fa-print"></i>
+                        Print Analytics
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Age Distribution Chart
+        const ageData = {{ age_groups | tojson }};
+        const ageLabels = ageData.map(item => item.age_group);
+        const ageCounts = ageData.map(item => item.count);
+        const ageColors = ['#667eea', '#764ba2', '#4facfe', '#00f2fe', '#38a169'];
+
+        new Chart(document.getElementById('ageChart'), {
+            type: 'pie',
+            data: {
+                labels: ageLabels,
+                datasets: [{
+                    data: ageCounts,
+                    backgroundColor: ageColors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+
+        // Sentiment Chart
+        const sentimentData = {{ sentiment_trends | tojson }};
+        const sentimentLabels = sentimentData.map(item => item.sentiment);
+        const sentimentCounts = sentimentData.map(item => item.count);
+        const sentimentColors = ['#e53e3e', '#fc8181', '#d69e2e', '#68d391', '#38a169'];
+
+        new Chart(document.getElementById('sentimentChart'), {
+            type: 'doughnut',
+            data: {
+                labels: sentimentLabels,
+                datasets: [{
+                    data: sentimentCounts,
+                    backgroundColor: sentimentColors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+
+        // Crisis Trend Chart
+        const crisisData = {{ daily_crisis | tojson }};
+
+        // Process crisis data for line chart
+        const dates = [...new Set(crisisData.map(item => item.date))].sort();
+        const crisisLevels = ['High', 'Medium', 'Low'];
+
+        const crisisDatasets = crisisLevels.map(level => {
+            const data = dates.map(date => {
+                const item = crisisData.find(d => d.date === date && d.crisis_level === level);
+                return item ? item.count : 0;
+            });
+
+            return {
+                label: level,
+                data: data,
+                borderColor: level === 'High' ? '#e53e3e' : level === 'Medium' ? '#d69e2e' : '#38a169',
+                backgroundColor: level === 'High' ? 'rgba(229, 62, 62, 0.1)' : level === 'Medium' ? 'rgba(214, 158, 46, 0.1)' : 'rgba(56, 161, 105, 0.1)',
+                fill: true,
+                tension: 0.4
+            };
+        });
+
+        new Chart(document.getElementById('crisisTrendChart'), {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: crisisDatasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f1f5f9'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Export functions
+        function generatePDFReport() {
+            alert('PDF report generation would be implemented here. This would create a comprehensive analytics report.');
+        }
+
+        function printAnalytics() {
+            window.print();
+        }
+
+        // Auto-refresh analytics every 5 minutes
+        setInterval(function() {
+            location.reload();
+        }, 300000);
+    </script>
+</body>
+</html>
+
